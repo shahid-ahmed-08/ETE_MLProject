@@ -9,4 +9,5 @@ xgboost
 flask 
 streamlit
 plotly
--e .
+dill
+#-e .
