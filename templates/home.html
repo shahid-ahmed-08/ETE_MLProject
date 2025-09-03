@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Student Exam Performance Predictor</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body>
+  <main>
+    <h1>Student Exam Performance Indicator</h1>
+
+    <!-- Simple instruction -->
+    <p>
+      Fill the form below and click <strong>Predict your Maths Score</strong>.
+      Reading/Writing scores should be integers between 0 and 100.
+    </p>
+
+    <!-- Prediction form -->
+    <form id="predict-form" action="{{ url_for('predict_datapoints') }}" method="post" novalidate>
+      <fieldset>
+        <legend>Student Exam Performance Prediction</legend>
+
+        <!-- Gender -->
+        <label for="gender">Gender <span aria-hidden="true">*</span></label><br/>
+        <select id="gender" name="gender" required aria-required="true">
+          <option value="" selected disabled>Select your Gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        <br/><br/>
+
+        <!-- Race / Ethnicity -->
+        <label for="ethnicity">Race or Ethnicity <span aria-hidden="true">*</span></label><br/>
+        <select id="ethnicity" name="ethnicity" required aria-required="true">
+          <option value="" selected disabled>Select Ethnicity</option>
+          <option value="group A">Group A</option>
+          <option value="group B">Group B</option>
+          <option value="group C">Group C</option>
+          <option value="group D">Group D</option>
+          <option value="group E">Group E</option>
+        </select>
+        <br/><br/>
+
+        <!-- Parental Level -->
+        <label for="parental_level_of_education">Parental Level of Education <span aria-hidden="true">*</span></label><br/>
+        <select id="parental_level_of_education" name="parental_level_of_education" required aria-required="true">
+          <option value="" selected disabled>Select Parent Education</option>
+          <option value="some high school">some high school</option>
+          <option value="high school">high school</option>
+          <option value="some college">some college</option>
+          <option value="associate's degree">associate's degree</option>
+          <option value="bachelor's degree">bachelor's degree</option>
+          <option value="master's degree">master's degree</option>
+        </select>
+        <br/><br/>
+
+        <!-- Lunch -->
+        <label for="lunch">Lunch Type <span aria-hidden="true">*</span></label><br/>
+        <select id="lunch" name="lunch" required aria-required="true">
+          <option value="" selected disabled>Select Lunch Type</option>
+          <option value="standard">standard</option>
+          <option value="free/reduced">free/reduced</option>
+        </select>
+        <br/><br/>
+
+        <!-- Test preparation -->
+        <label for="test_preparation_course">Test preparation course <span aria-hidden="true">*</span></label><br/>
+        <select id="test_preparation_course" name="test_preparation_course" required aria-required="true">
+          <option value="" selected disabled>Select Test Course</option>
+          <option value="none">none</option>
+          <option value="completed">completed</option>
+        </select>
+        <br/><br/>
+
+        <!-- Writing score -->
+        <label for="writing_score">Writing score (0–100) <span aria-hidden="true">*</span></label><br/>
+        <input
+          id="writing_score"
+          name="writing_score"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="100"
+          step="1"
+          placeholder="Enter writing score"
+          required
+          aria-required="true"
+        />
+        <br/><br/>
+
+        <!-- Reading score -->
+        <label for="reading_score">Reading score (0–100) <span aria-hidden="true">*</span></label><br/>
+        <input
+          id="reading_score"
+          name="reading_score"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="100"
+          step="1"
+          placeholder="Enter reading score"
+          required
+          aria-required="true"
+        />
+        <br/><br/>
+
+        <!-- Submit -->
+        <button id="submit-btn" type="submit">Predict your Maths Score</button>
+        <span id="submit-status" aria-live="polite"></span>
+      </fieldset>
+    </form>
+
+    <hr/>
+
+    <!-- Live preview + hint (client-side only) -->
+    <section aria-labelledby="preview-heading">
+      <h2 id="preview-heading">Input preview & quick hint</h2>
+      <div id="preview">
+        <p><strong>Gender:</strong> <span id="p-gender">—</span></p>
+        <p><strong>Ethnicity:</strong> <span id="p-ethnicity">—</span></p>
+        <p><strong>Parental Education:</strong> <span id="p-parental">—</span></p>
+        <p><strong>Lunch:</strong> <span id="p-lunch">—</span></p>
+        <p><strong>Test prep:</strong> <span id="p-testprep">—</span></p>
+        <p><strong>Writing score:</strong> <span id="p-writing">—</span></p>
+        <p><strong>Reading score:</strong> <span id="p-reading">—</span></p>
+        <p><strong>Estimated average (reading+writing) :</strong> <span id="p-average">—</span></p>
+        <p><em>Hint:</em> Higher reading & writing average generally increases predicted math score — use it to sanity-check your input.</p>
+      </div>
+    </section>
+
+    <hr/>
+
+    <!-- Prediction result area — when Flask returns rendered template with {{results}} this section will show it -->
+    <section aria-labelledby="result-heading">
+      <h2 id="result-heading">Prediction</h2>
+      <div id="result">
+        <!-- When server renders, Flask will replace {{ results }} -->
+        <p id="server-result">THE prediction is {{ results if results is defined else "—" }}</p>
+      </div>
+    </section>
+
+    <hr/>
+
+    <!-- Small JS for dynamic behavior: preview, validation, submit state -->
+    <script>
+      (function () {
+        const form = document.getElementById('predict-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitStatus = document.getElementById('submit-status');
+
+        const inputs = {
+          gender: document.getElementById('gender'),
+          ethnicity: document.getElementById('ethnicity'),
+          parental: document.getElementById('parental_level_of_education'),
+          lunch: document.getElementById('lunch'),
+          testprep: document.getElementById('test_preparation_course'),
+          writing: document.getElementById('writing_score'),
+          reading: document.getElementById('reading_score')
+        };
+
+        const preview = {
+          gender: document.getElementById('p-gender'),
+          ethnicity: document.getElementById('p-ethnicity'),
+          parental: document.getElementById('p-parental'),
+          lunch: document.getElementById('p-lunch'),
+          testprep: document.getElementById('p-testprep'),
+          writing: document.getElementById('p-writing'),
+          reading: document.getElementById('p-reading'),
+          average: document.getElementById('p-average')
+        };
+
+        function updatePreview() {
+          preview.gender.textContent = inputs.gender.value || '—';
+          preview.ethnicity.textContent = inputs.ethnicity.value || '—';
+          preview.parental.textContent = inputs.parental.value || '—';
+          preview.lunch.textContent = inputs.lunch.value || '—';
+          preview.testprep.textContent = inputs.testprep.value || '—';
+          preview.writing.textContent = inputs.writing.value || '—';
+          preview.reading.textContent = inputs.reading.value || '—';
+
+          const w = Number(inputs.writing.value);
+          const r = Number(inputs.reading.value);
+          if (!Number.isNaN(w) && !Number.isNaN(r) && inputs.writing.value !== '' && inputs.reading.value !== '') {
+            const avg = ((w + r) / 2).toFixed(1);
+            preview.average.textContent = avg;
+          } else {
+            preview.average.textContent = '—';
+          }
+        }
+
+        // attach listeners to all inputs to update preview and validate
+        Object.values(inputs).forEach(el => {
+          el.addEventListener('input', updatePreview);
+          el.addEventListener('change', updatePreview);
+        });
+
+        // Basic HTML5 validation check before submit; show submitting state
+        form.addEventListener('submit', function (e) {
+          // Let the browser run its own validation first:
+          if (!form.checkValidity()) {
+            // If invalid, show browser UI and don't intercept
+            submitStatus.textContent = ' Please fill required fields correctly.';
+            return;
+          }
+
+          // Provide instant feedback while the server processes
+          submitBtn.disabled = true;
+          submitStatus.textContent = ' Predicting...';
+          // Allow normal form submit (server round-trip). If you prefer AJAX, you can replace default behavior here.
+        });
+
+        // Initial preview fill
+        updatePreview();
+      })();
+    </script>
+  </main>
+</body>
+</html>
